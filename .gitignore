@@ -4,6 +4,7 @@ __pycache__/
 mlruns/
 mlartifacts/
 data/raw/*.csv
+data/processed/*.csv
 .env
 .DS_Store
 *.egg-info/
