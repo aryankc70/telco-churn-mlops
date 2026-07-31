@@ -8,6 +8,8 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, classification_report
 )
 import pandas as pd
+import optuna
+from sklearn.model_selection import cross_val_score
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -72,3 +74,46 @@ def train_model(df: pd.DataFrame, params: dict = None, threshold: float = 0.3,
         print("\n" + classification_report(y_test, y_pred))
 
     return model
+
+
+def tune_model(df: pd.DataFrame, n_trials: int = 30, threshold: float = 0.3):
+    """
+    Use Optuna to find XGBoost hyperparameters that maximize recall.
+
+    Args:
+        df: Feature-engineered dataframe with 'Churn' as target column.
+        n_trials: Number of Optuna trials to run.
+        threshold: Classification threshold used during evaluation.
+
+    Returns:
+        dict of best hyperparameters found.
+    """
+    X = df.drop(columns=["Churn"])
+    y = df["Churn"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    def objective(trial):
+        params = {
+            "n_estimators": trial.suggest_int("n_estimators", 300, 800),
+            "max_depth": trial.suggest_int("max_depth", 3, 10),
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2),
+            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+            "random_state": 42,
+        }
+        model = XGBClassifier(**params, eval_metric="logloss")
+        model.fit(X_train, y_train)
+        y_proba = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_proba >= threshold).astype(int)
+        return recall_score(y_test, y_pred)
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=n_trials)
+
+    print(f"Best recall: {study.best_value:.4f}")
+    print(f"Best params: {study.best_params}")
+
+    return study.best_params
