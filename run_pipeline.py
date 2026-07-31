@@ -6,7 +6,7 @@ from src.data.load_data import load_data
 from src.data.preprocess import preprocess_data
 from src.features.build_features import build_features
 from src.validation.validate_data import validate_telco_data
-from src.models.train import train_model
+from src.models.train import train_model, save_model
 
 RAW_DATA_PATH = "data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv"
 
@@ -41,7 +41,11 @@ def run_pipeline():
     print(f"  Final feature shape: {df_final.shape}")
 
     print("Step 5/5: Training model with MLflow tracking...")
-    model = train_model(df_final, params=BEST_PARAMS, threshold=THRESHOLD)
+    model, feature_columns = train_model(df_final, params=BEST_PARAMS, threshold=THRESHOLD)
+
+    print("Saving trained model...")
+    save_model(model, feature_columns)
+
     print("Pipeline complete.")
 
     return model

@@ -10,6 +10,9 @@ from sklearn.metrics import (
 import pandas as pd
 import optuna
 from sklearn.model_selection import cross_val_score
+import joblib
+import json
+
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -73,7 +76,7 @@ def train_model(df: pd.DataFrame, params: dict = None, threshold: float = 0.3,
         print(f"F1 Score: {f1:.4f}")
         print("\n" + classification_report(y_test, y_pred))
 
-    return model
+    return model, X.columns.tolist()
 
 
 def tune_model(df: pd.DataFrame, n_trials: int = 30, threshold: float = 0.3):
@@ -117,3 +120,26 @@ def tune_model(df: pd.DataFrame, n_trials: int = 30, threshold: float = 0.3):
     print(f"Best params: {study.best_params}")
 
     return study.best_params
+
+def save_model(model, feature_columns, model_dir: str = None):
+    """
+    Persist the trained model and the exact feature column order to disk.
+
+    Args:
+        model: Trained XGBClassifier.
+        feature_columns: List of column names in the order the model expects.
+        model_dir: Directory to save into. Defaults to <project_root>/models.
+    """
+    if model_dir is None:
+        model_dir = os.path.join(_PROJECT_ROOT, "models")
+    os.makedirs(model_dir, exist_ok=True)
+
+    model_path = os.path.join(model_dir, "model.joblib")
+    columns_path = os.path.join(model_dir, "feature_columns.json")
+
+    joblib.dump(model, model_path)
+    with open(columns_path, "w") as f:
+        json.dump(list(feature_columns), f)
+
+    print(f"Model saved to {model_path}")
+    print(f"Feature columns saved to {columns_path}")
