@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 mlruns/
 mlartifacts/
-data/raw/*.csv
 data/processed/*.csv
 .env
 .DS_Store
