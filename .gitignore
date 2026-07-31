@@ -8,4 +8,4 @@ data/processed/*.csv
 .env
 .DS_Store
 *.egg-info/
-.pytest_cache/
+.pytest_cache/mlflow.db
