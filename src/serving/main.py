@@ -1,7 +1,9 @@
 """FastAPI application serving the Telco churn model."""
+import gradio as gr
 from fastapi import FastAPI, HTTPException
 from src.serving.schemas import CustomerData, PredictionResponse
 from src.serving.inference import predict_churn, load_artifacts
+from src.serving.ui import build_ui
 
 app = FastAPI(
     title="Telco Customer Churn Prediction API",
@@ -27,3 +29,8 @@ def predict(customer: CustomerData):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Mount Gradio UI at /ui
+gradio_app = build_ui()
+app = gr.mount_gradio_app(app, gradio_app, path="/ui")
